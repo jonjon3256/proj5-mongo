@@ -29,8 +29,7 @@ You'll turn in your credentials.ini using which we will get the following:
 
 * The working application.
 
-* A README.md file that includes not only identifying information (your name,
-  the path to your application on ix) but but also a revised, clear specification 
+* A README.md file that includes not only identifying information (your name) but but also a revised, clear specification 
   of the brevet controle time calculation rules.
 
 * Dockerfile
