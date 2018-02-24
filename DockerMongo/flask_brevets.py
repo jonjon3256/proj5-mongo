@@ -1,39 +1,53 @@
-import os
-from flask import Flask, redirect, url_for, request, render_template
+"""
+Replacement for RUSA ACP brevet time calculator
+(see https://rusa.org/octime_acp.html)
+
+"""
+# Was able to get most of the functions workin, but kept getting a syntax error in def imply_types under the config.py file. Could not get the opening and closing times to be posted
+
+
+
+
 import flask
-from pymongo import MongoClient
-import arrow
-import acp_times
+from flask import request
+import arrow  # Replacement for datetime, based on moment.js
+import acp_times  # Brevet time calculations
 import config
+
 import logging
 
-
+###
+# Globals
+###
 app = flask.Flask(__name__)
 CONFIG = config.configuration()
-#app.secret_key = CONFIG.SECRET_KEY
+app.secret_key = CONFIG.SECRET_KEY
 
-client = MongoClient(os.environ['DB_PORT_27017_TCP_ADDR'], 27017)
-db = client.tododb
-
-datalist = []
-
+###
+# Pages
+###
 
 
-@app.route('/')
-@app.route('/todo')
-def todo():
-    _items = db.tododb.find()
-    items = [item for item in _items]
+@app.route("/")
+@app.route("/index")
+def index():
+    app.logger.debug("Main page entry")
+    return flask.render_template('calc.html')
 
-    return flask.render_template('todo.html', items=items)
 
 @app.errorhandler(404)
 def page_not_found(error):
     app.logger.debug("Page not found")
-    flask.session['linkback'] = flask.url_for("todo")
+    flask.session['linkback'] = flask.url_for("index")
     return flask.render_template('404.html'), 404
 
 
+###############
+#
+# AJAX request handlers
+#   These return JSON, rather than rendering pages.
+#
+###############
 @app.route("/_calc_times")
 def _calc_times():
     """
@@ -64,30 +78,19 @@ def _calc_times():
     datalist.append(data_list)
     return flask.jsonify(result=result)
 
-@app.route('/_new', methods=['POST'])
-def _new():
-    for item_doc in datalist:
-        db.tododb.insert_one(item_doc)
-    while (datalist != []):
-        datalist.pop()
-
-    return redirect(url_for('todo'))
-
-
-@app.route("/_display",methods=['POST'])
+@app.route("_display",methods=['POST'])
 def _display():
     _items = db.tododb.find()
     items = [item for item in _items]
 
-    return render_template('display.html', items=items)
-
+    return render_template('todo.html', items=items)
     
 
 #############
 
-#app.debug = CONFIG.DEBUG
-#if app.debug:
-#    app.logger.setLevel(logging.DEBUG)
+app.debug = CONFIG.DEBUG
+if app.debug:
+    app.logger.setLevel(logging.DEBUG)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0",debug =True)
+    app.run(port=CONFIG.PORT, host="0.0.0.0")
